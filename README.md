@@ -14,12 +14,12 @@ E-commerce for Indonesian snacks, organized as an npm-workspaces monorepo.
 2. Start local MySQL with `docker compose up -d mysql` (Docker Desktop required).
 3. Copy `apps/api/.env.example` to `apps/api/.env`. Its local database URL matches the development-only Compose credentials.
 4. Apply the schema with `npm run db:migrate`, then load starter products with `npm run db:seed`.
-5. Start the API with `npm run dev:api` and the storefront with `npm run dev:web`.
+5. Start both servers together with `npm run dev` (or individually with `npm run dev:api` and `npm run dev:web`).
 
 The storefront runs at `http://localhost:5173`; the API runs at `http://localhost:3000`. Start Docker Desktop before `docker compose up -d mysql`. The seed data is development-only.
 
 Validate and generate the Prisma client with `npm run db:validate` and `npm run db:generate`.
-Run the API boundary suite with `npm run test:api` and all workspace production builds with `npm run build`.
+Run the API boundary suite with `npm run test:api`, type checking with `npm run typecheck`, and production builds with `npm run build`.
 
 The Compose credentials are only for local development and must not be reused in production. The initial migration is generated but must be applied to the local database before catalog and authentication operations will work.
 

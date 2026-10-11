@@ -5,6 +5,7 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "dev:web": "npm run dev --workspace @piscokshop/web",
     "dev:api": "npm run dev --workspace @piscokshop/api",
     "build": "npm run build --workspace @piscokshop/web && npm run build --workspace @piscokshop/api",
@@ -15,5 +16,8 @@
     "db:migrate": "npm run db:migrate --workspace @piscokshop/api",
     "db:seed": "npm run db:seed --workspace @piscokshop/api",
     "admin:create": "npm run admin:create --workspace @piscokshop/api"
+  },
+  "devDependencies": {
+    "concurrently": "10.0.6"
   }
 }

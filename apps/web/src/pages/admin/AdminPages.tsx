@@ -1,8 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Activity, ArrowRight, Box, ClipboardList, LogOut, Package, RefreshCw, Shapes, TicketPercent, Trash2, Users } from 'lucide-react'
+import { Activity, ArrowRight, Box, Check, ClipboardList, Edit2, ImageIcon, LogOut, Package, Plus, RefreshCw, RotateCcw, Shapes, TicketPercent, Trash2, Users, X } from 'lucide-react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
-import { adjustInventory, createAdminCoupon, createAdminProduct, createAdminPromotion, createAdminTaxonomy, getAdminCoupons, getAdminCustomers, getAdminOrder, getAdminOrders, getAdminProducts, getAdminPromotions, getAdminTaxonomy, getDashboard, getSalesReport, updateOrderShipping, updateOrderStatus, type AdminCustomer, type AdminDashboardData, type AdminOrder, type AdminOrderDetail, type AdminProduct, type AdminPromotion, type AdminTaxonomy, type SalesReportRow } from '../../features/admin/api'
+import { adjustInventory, createAdminCoupon, createAdminProduct, createAdminPromotion, createAdminTaxonomy, deleteAdminProduct, getAdminCoupons, getAdminCustomers, getAdminOrder, getAdminOrders, getAdminProducts, getAdminPromotions, getAdminTaxonomy, getDashboard, getSalesReport, updateAdminProduct, updateAdminVariant, updateOrderShipping, updateOrderStatus, type AdminCustomer, type AdminDashboardData, type AdminOrder, type AdminOrderDetail, type AdminProduct, type AdminPromotion, type AdminTaxonomy, type SalesReportRow } from '../../features/admin/api'
 import { getRequestError } from '../../features/products/api'
 
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
@@ -261,7 +261,11 @@ export function AdminProductsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
+
+  // Toggle Tambah Produk Form
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [categoryId, setCategoryId] = useState('')
@@ -269,74 +273,487 @@ export function AdminProductsPage() {
   const [image, setImage] = useState('')
   const [variantRows, setVariantRows] = useState([{ flavorId: '', sizeId: '', sku: '', price: '', stock: '' }])
 
+  // State Edit Cemilan Modal
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editSlug, setEditSlug] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editImageUrl, setEditImageUrl] = useState('')
+  const [editVariantPrices, setEditVariantPrices] = useState<Record<string, number | string>>({})
+  const [savingEdit, setSavingEdit] = useState(false)
+
   useEffect(() => {
     let active = true
     setLoading(true)
     Promise.all([getAdminProducts(), getAdminTaxonomy('categories'), getAdminTaxonomy('flavors'), getAdminTaxonomy('sizes')])
       .then(([productData, categoryData, flavorData, sizeData]) => {
         if (!active) return
+        const activeCats = categoryData.filter((item) => item.status === 'ACTIVE')
+        const activeFlavs = flavorData.filter((item) => item.status === 'ACTIVE')
+        const activeSizes = sizeData.filter((item) => item.status === 'ACTIVE')
         setProducts(productData)
-        setCategories(categoryData.filter((item) => item.status === 'ACTIVE'))
-        setFlavors(flavorData.filter((item) => item.status === 'ACTIVE'))
-        setSizes(sizeData.filter((item) => item.status === 'ACTIVE'))
+        setCategories(activeCats)
+        setFlavors(activeFlavs)
+        setSizes(activeSizes)
+        setCategoryId((prev) => prev || (activeCats[0]?.id ?? ''))
+        setVariantRows((prev) =>
+          prev.map((row) => ({
+            ...row,
+            flavorId: row.flavorId || (activeFlavs[0]?.id ?? ''),
+            sizeId: row.sizeId || (activeSizes[0]?.id ?? ''),
+          })),
+        )
       })
       .catch((requestError: unknown) => { if (active) setError(getRequestError(requestError)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [reload])
 
+  const handleNameChange = (val: string) => {
+    setName(val)
+    const autoSlug = val.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    setSlug(autoSlug)
+  }
+
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setSaving(true)
     setError(null)
+    setSuccessMessage(null)
+
+    const cleanName = name.trim()
+    const cleanSlug = (slug || name).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    const cleanCat = categoryId || categories[0]?.id
+
+    if (!cleanName) {
+      setError('Nama cemilan wajib diisi.')
+      setSaving(false)
+      return
+    }
+    if (!cleanSlug) {
+      setError('Slug cemilan tidak valid.')
+      setSaving(false)
+      return
+    }
+    if (!cleanCat) {
+      setError('Silakan pilih atau tambahkan kategori cemilan terlebih dahulu.')
+      setSaving(false)
+      return
+    }
+
+    const cleanImg = image.trim()
+    const validImg = cleanImg && (cleanImg.startsWith('http://') || cleanImg.startsWith('https://')) ? cleanImg : undefined
+
     try {
       await createAdminProduct({
-        name,
-        slug,
-        categoryId,
-        description: description || undefined,
-        images: image ? [{ url: image, altText: name }] : [],
-        variants: variantRows.map((variant) => ({ ...variant, price: Number(variant.price), initialStock: Number(variant.stock), weightGrams: Number(sizes.find((size) => size.id === variant.sizeId)?.weightGrams ?? 0) })),
+        name: cleanName,
+        slug: cleanSlug,
+        categoryId: cleanCat,
+        description: description.trim() || undefined,
+        images: validImg ? [{ url: validImg, altText: cleanName }] : [],
+        variants: variantRows.map((variant, idx) => {
+          const foundSize = sizes.find((size) => size.id === variant.sizeId)
+          const autoSku = (variant.sku || `${cleanSlug.slice(0, 4).toUpperCase()}-${idx + 1}`).trim()
+          return {
+            flavorId: variant.flavorId || (flavors[0]?.id ?? ''),
+            sizeId: variant.sizeId || (sizes[0]?.id ?? ''),
+            sku: autoSku,
+            price: Math.max(0, Number(variant.price) || 0),
+            initialStock: Math.max(0, Number(variant.stock) || 0),
+            weightGrams: Math.max(1, Number(foundSize?.weightGrams ?? 100)),
+          }
+        }),
       })
       setName('')
       setSlug('')
       setDescription('')
       setImage('')
-      setVariantRows([{ flavorId: '', sizeId: '', sku: '', price: '', stock: '' }])
+      setVariantRows([{ flavorId: flavors[0]?.id ?? '', sizeId: sizes[0]?.id ?? '', sku: '', price: '', stock: '' }])
+      setShowCreateForm(false)
+      setSuccessMessage(`Cemilan "${cleanName}" berhasil ditambahkan!`)
       setReload((value) => value + 1)
-    } catch (requestError) { setError(getRequestError(requestError)) }
-    finally { setSaving(false) }
+    } catch (requestError) {
+      setError(getRequestError(requestError))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const updateVariant = (index: number, key: keyof typeof variantRows[number], value: string) => {
     setVariantRows((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row))
   }
 
+  const openEditModal = (product: AdminProduct) => {
+    setEditingProduct(product)
+    setEditName(product.name)
+    setEditSlug(product.slug)
+    setEditCategoryId(product.category.id)
+    setEditDescription(product.description ?? '')
+    setEditImageUrl(product.images?.[0]?.url ?? '')
+    const prices: Record<string, number | string> = {}
+    product.variants.forEach((v) => {
+      prices[v.id] = v.price
+    })
+    setEditVariantPrices(prices)
+    setError(null)
+  }
+
+  const closeEditModal = () => {
+    setEditingProduct(null)
+    setSavingEdit(false)
+  }
+
+  const saveEdit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!editingProduct) return
+    setSavingEdit(true)
+    setError(null)
+    setSuccessMessage(null)
+    try {
+      await updateAdminProduct(editingProduct.id, {
+        name: editName,
+        slug: editSlug,
+        categoryId: editCategoryId,
+        description: editDescription || null,
+        images: editImageUrl ? [{ url: editImageUrl, altText: editName }] : [],
+      })
+
+      const priceUpdates = editingProduct.variants.map(async (v) => {
+        const newPrice = Number(editVariantPrices[v.id])
+        if (!isNaN(newPrice) && newPrice !== v.price) {
+          return updateAdminVariant(v.id, { price: newPrice })
+        }
+      })
+      await Promise.all(priceUpdates)
+
+      setSuccessMessage(`Cemilan "${editName}" berhasil diperbarui!`)
+      closeEditModal()
+      setReload((v) => v + 1)
+    } catch (requestError) {
+      setError(getRequestError(requestError))
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleDelete = async (product: AdminProduct) => {
+    if (!window.confirm(`Yakin ingin menonaktifkan cemilan "${product.name}"? Cemilan tidak akan muncul di katalog pembeli.`)) return
+    setError(null)
+    setSuccessMessage(null)
+    try {
+      await deleteAdminProduct(product.id)
+      setSuccessMessage(`Cemilan "${product.name}" berhasil dinonaktifkan.`)
+      setReload((v) => v + 1)
+    } catch (requestError) {
+      setError(getRequestError(requestError))
+    }
+  }
+
+  const handleActivate = async (product: AdminProduct) => {
+    setError(null)
+    setSuccessMessage(null)
+    try {
+      await updateAdminProduct(product.id, { status: 'ACTIVE' })
+      setSuccessMessage(`Cemilan "${product.name}" berhasil diaktifkan kembali.`)
+      setReload((v) => v + 1)
+    } catch (requestError) {
+      setError(getRequestError(requestError))
+    }
+  }
+
   return (
     <>
-      <div className="admin-page-heading"><div><p className="eyebrow">KATALOG</p><h1>Produk</h1></div><button className="admin-refresh" aria-label="Muat ulang produk" onClick={() => setReload((value) => value + 1)} type="button"><RefreshCw size={16} /></button></div>
-      {error && <p className="auth-error" role="alert">{error}</p>}
-      <form className="admin-create-form" onSubmit={save}>
-        <h2>Tambah produk</h2>
-        <div className="checkout-field-grid">
-          <label>Nama<input maxLength={180} minLength={2} onChange={(event) => setName(event.target.value)} required value={name} /></label>
-          <label>Slug<input maxLength={200} onChange={(event) => setSlug(event.target.value)} pattern="[a-z0-9]+(-[a-z0-9]+)*" required value={slug} /></label>
-          <label>Kategori<select onChange={(event) => setCategoryId(event.target.value)} required value={categoryId}><option value="">Pilih kategori</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label>URL foto<input onChange={(event) => setImage(event.target.value)} type="url" value={image} /></label>
-          <label className="checkout-wide">Deskripsi<textarea maxLength={10000} onChange={(event) => setDescription(event.target.value)} rows={2} value={description} /></label>
+      <div className="admin-page-heading">
+        <div>
+          <p className="eyebrow">KATALOG CEMILAN</p>
+          <h1>Produk</h1>
         </div>
-        <div className="variant-draft-heading"><h3>SKU dan varian</h3><button className="quote-button" onClick={() => setVariantRows((rows) => [...rows, { flavorId: '', sizeId: '', sku: '', price: '', stock: '' }])} type="button">Tambah varian</button></div>
-        {variantRows.map((variant, index) => <div className="variant-draft" key={index}>
-          <label>Rasa<select onChange={(event) => updateVariant(index, 'flavorId', event.target.value)} required value={variant.flavorId}><option value="">Pilih rasa</option>{flavors.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label>Ukuran<select onChange={(event) => updateVariant(index, 'sizeId', event.target.value)} required value={variant.sizeId}><option value="">Pilih ukuran</option>{sizes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-          <label>SKU<input maxLength={100} minLength={2} onChange={(event) => updateVariant(index, 'sku', event.target.value)} required value={variant.sku} /></label>
-          <label>Harga<input min={0} onChange={(event) => updateVariant(index, 'price', event.target.value)} required type="number" value={variant.price} /></label>
-          <label>Stok awal<input min={0} onChange={(event) => updateVariant(index, 'stock', event.target.value)} required type="number" value={variant.stock} /></label>
-          {variantRows.length > 1 && <button className="icon-button" aria-label="Hapus baris varian" onClick={() => setVariantRows((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} type="button"><Trash2 size={15} /></button>}
-        </div>)}
-        <button className="button-primary" disabled={saving} type="submit">{saving ? 'Menyimpan...' : 'Simpan produk'} <Package size={16} /></button>
-      </form>
-      <section className="admin-section"><h2>Daftar produk</h2><AdminPageState loading={loading} error={error} retry={() => setReload((value) => value + 1)} />{!loading && !error && <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Produk</th><th>Kategori</th><th>Varian</th><th>Status</th></tr></thead><tbody>{products.map((product) => <tr key={product.id}><td>{product.name}<small>{product.slug}</small></td><td>{product.category.name}</td><td>{product.variants.length} SKU</td><td>{product.status}</td></tr>)}{products.length === 0 && <tr><td colSpan={4}>Belum ada produk.</td></tr>}</tbody></table></div>}</section>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="button-primary"
+            onClick={() => setShowCreateForm((prev) => !prev)}
+            type="button"
+            style={{ minHeight: '36px', padding: '0 14px', fontSize: '11px' }}
+          >
+            {showCreateForm ? <X size={15} /> : <Plus size={15} />}
+            {showCreateForm ? 'Tutup Formulir' : 'Tambah Cemilan'}
+          </button>
+          <button className="admin-refresh" aria-label="Muat ulang produk" onClick={() => setReload((value) => value + 1)} type="button">
+            <RefreshCw size={16} />
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="auth-error" role="alert" style={{ marginBottom: '16px' }}>{error}</p>}
+      {successMessage && <p className="inventory-success" role="status" style={{ marginBottom: '16px' }}>✓ {successMessage}</p>}
+
+      {showCreateForm && (
+        <form className="admin-create-form" onSubmit={save} style={{ borderTop: 'none', background: '#faf9f5', padding: '20px', borderRadius: '8px', border: '1px solid var(--line)', marginBottom: '28px' }}>
+          <h2>Tambah Cemilan Baru</h2>
+          <div className="checkout-field-grid">
+            <label>Nama Cemilan<input maxLength={180} minLength={2} placeholder="contoh: Piscok Keju Lumer" onChange={(event) => handleNameChange(event.target.value)} required value={name} /></label>
+            <label>Slug URL<input maxLength={200} placeholder="contoh: piscok-keju-lumer" onChange={(event) => setSlug(event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} pattern="[a-z0-9]+(-[a-z0-9]+)*" required value={slug} /></label>
+            <label>Kategori<select onChange={(event) => setCategoryId(event.target.value)} required value={categoryId}><option value="">Pilih kategori</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label>URL Foto Cemilan<input onChange={(event) => setImage(event.target.value)} placeholder="https://..." type="url" value={image} /></label>
+            <label className="checkout-wide">Deskripsi<textarea maxLength={10000} placeholder="Jelaskan kelezatan cemilan ini..." onChange={(event) => setDescription(event.target.value)} rows={2} value={description} /></label>
+          </div>
+          <div className="variant-draft-heading">
+            <h3>Varian, Harga & Stok</h3>
+            <button className="quote-button" onClick={() => setVariantRows((rows) => [...rows, { flavorId: '', sizeId: '', sku: '', price: '', stock: '' }])} type="button">Tambah Varian</button>
+          </div>
+          {variantRows.map((variant, index) => (
+            <div className="variant-draft" key={index}>
+              <label>Rasa<select onChange={(event) => updateVariant(index, 'flavorId', event.target.value)} required value={variant.flavorId}><option value="">Pilih rasa</option>{flavors.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+              <label>Ukuran<select onChange={(event) => updateVariant(index, 'sizeId', event.target.value)} required value={variant.sizeId}><option value="">Pilih ukuran</option>{sizes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+              <label>SKU<input maxLength={100} minLength={2} placeholder="PSK-CKL-REG" onChange={(event) => updateVariant(index, 'sku', event.target.value)} required value={variant.sku} /></label>
+              <label>Harga (Rp)<input min={0} placeholder="15000" onChange={(event) => updateVariant(index, 'price', event.target.value)} required type="number" value={variant.price} /></label>
+              <label>Stok Awal<input min={0} placeholder="50" onChange={(event) => updateVariant(index, 'stock', event.target.value)} required type="number" value={variant.stock} /></label>
+              {variantRows.length > 1 && <button className="icon-button" aria-label="Hapus baris varian" onClick={() => setVariantRows((rows) => rows.filter((_, rowIndex) => rowIndex !== index))} type="button"><Trash2 size={15} /></button>}
+            </div>
+          ))}
+          <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+            <button className="button-primary" disabled={saving} type="submit">{saving ? 'Menyimpan...' : 'Simpan Cemilan'} <Package size={16} /></button>
+            <button className="btn-secondary" onClick={() => setShowCreateForm(false)} type="button">Batal</button>
+          </div>
+        </form>
+      )}
+
+      <section className="admin-section">
+        <h2>Daftar Cemilan ({products.length})</h2>
+        <AdminPageState loading={loading} error={error} retry={() => setReload((value) => value + 1)} />
+        {!loading && !error && (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '60px' }}>Foto</th>
+                  <th>Cemilan</th>
+                  <th>Kategori</th>
+                  <th>Varian & Harga</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => {
+                  const firstImg = product.images?.[0]?.url
+                  const isActive = product.status === 'ACTIVE'
+                  return (
+                    <tr key={product.id}>
+                      <td>
+                        {firstImg ? (
+                          <img alt={product.name} className="product-thumb" src={firstImg} />
+                        ) : (
+                          <div className="product-thumb-placeholder">
+                            <ImageIcon size={20} />
+                          </div>
+                        )}
+                      </td>
+                      <td>
+                        <div className="product-info-name">{product.name}</div>
+                        <small>{product.slug}</small>
+                        {product.description && <div className="product-info-desc">{product.description}</div>}
+                      </td>
+                      <td>{product.category?.name ?? '-'}</td>
+                      <td>
+                        <div className="variant-price-list">
+                          {product.variants.map((v) => (
+                            <div className="variant-price-item" key={v.id}>
+                              <span>{v.flavor?.name ?? '-'} ({v.size?.name ?? '-'}):</span>
+                              <span className="variant-price-tag">{rupiah.format(v.price)}</span>
+                              <small style={{ color: 'var(--muted)', marginLeft: '4px' }}>Stok: {v.stockOnHand}</small>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge-status ${isActive ? 'active' : 'inactive'}`}>
+                          {isActive ? 'Aktif' : 'Nonaktif'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                          <button
+                            className="action-btn edit"
+                            onClick={() => openEditModal(product)}
+                            type="button"
+                            title="Edit cemilan & harga"
+                          >
+                            <Edit2 size={13} /> Edit
+                          </button>
+                          {isActive ? (
+                            <button
+                              className="action-btn delete"
+                              onClick={() => void handleDelete(product)}
+                              type="button"
+                              title="Nonaktifkan cemilan"
+                            >
+                              <Trash2 size={13} /> Hapus
+                            </button>
+                          ) : (
+                            <button
+                              className="action-btn restore"
+                              onClick={() => void handleActivate(product)}
+                              type="button"
+                              title="Aktifkan kembali"
+                            >
+                              <RotateCcw size={13} /> Aktifkan
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {products.length === 0 && (
+                  <tr>
+                    <td colSpan={6}>Belum ada produk cemilan. Klik tombol "Tambah Cemilan" di atas.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* MODAL EDIT CEMILAN */}
+      {editingProduct && (
+        <div className="modal-backdrop" onClick={closeEditModal}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit Cemilan: {editingProduct.name}</h2>
+              <button aria-label="Tutup modal" className="modal-close-btn" onClick={closeEditModal} type="button">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={saveEdit}>
+              <div className="modal-body">
+                <div className="checkout-field-grid">
+                  <label>
+                    Nama Cemilan
+                    <input
+                      maxLength={180}
+                      minLength={2}
+                      onChange={(e) => setEditName(e.target.value)}
+                      required
+                      value={editName}
+                    />
+                  </label>
+                  <label>
+                    Slug URL
+                    <input
+                      maxLength={200}
+                      onChange={(e) => setEditSlug(e.target.value)}
+                      pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                      required
+                      value={editSlug}
+                    />
+                  </label>
+                  <label>
+                    Kategori
+                    <select
+                      onChange={(e) => setEditCategoryId(e.target.value)}
+                      required
+                      value={editCategoryId}
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div>
+                    <label>
+                      URL Foto Cemilan
+                      <input
+                        onChange={(e) => setEditImageUrl(e.target.value)}
+                        placeholder="https://images.unsplash.com/..."
+                        type="url"
+                        value={editImageUrl}
+                      />
+                    </label>
+                    <div className="image-preview-wrap">
+                      {editImageUrl ? (
+                        <>
+                          <img
+                            alt="Preview cemilan"
+                            className="image-preview-img"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                            src={editImageUrl}
+                          />
+                          <small style={{ color: 'var(--muted)', fontSize: '10px' }}>Preview foto cemilan</small>
+                        </>
+                      ) : (
+                        <div className="image-preview-empty">Tanpa Foto</div>
+                      )}
+                    </div>
+                  </div>
+                  <label className="checkout-wide">
+                    Deskripsi Cemilan
+                    <textarea
+                      maxLength={10000}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      rows={3}
+                      value={editDescription}
+                    />
+                  </label>
+                </div>
+
+                <div>
+                  <h3 style={{ margin: '0 0 8px', fontSize: '13px', color: 'var(--ink)' }}>
+                    Edit Harga per Varian
+                  </h3>
+                  <table className="variant-edit-table">
+                    <thead>
+                      <tr>
+                        <th>Rasa</th>
+                        <th>Ukuran</th>
+                        <th>SKU</th>
+                        <th>Stok</th>
+                        <th style={{ width: '180px' }}>Harga Baru (Rp)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {editingProduct.variants.map((variant) => (
+                        <tr key={variant.id}>
+                          <td><strong>{variant.flavor?.name ?? '-'}</strong></td>
+                          <td>{variant.size?.name ?? '-'}</td>
+                          <td><code>{variant.sku}</code></td>
+                          <td>{variant.stockOnHand} pcs</td>
+                          <td>
+                            <input
+                              min={0}
+                              onChange={(e) =>
+                                setEditVariantPrices((prev) => ({
+                                  ...prev,
+                                  [variant.id]: e.target.value,
+                                }))
+                              }
+                              required
+                              type="number"
+                              value={editVariantPrices[variant.id] ?? ''}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-secondary" onClick={closeEditModal} type="button">
+                  Batal
+                </button>
+                <button className="button-primary" disabled={savingEdit} type="submit">
+                  {savingEdit ? 'Menyimpan...' : 'Simpan Perubahan'} <Check size={16} />
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }

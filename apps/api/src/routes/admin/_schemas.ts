@@ -25,25 +25,26 @@ export const variantCreateSchema = z.object({
   sizeId: cuidSchema,
   sku: z.string().trim().min(2).max(100),
   price: z.coerce.number().int().nonnegative(),
-  weightGrams: z.coerce.number().int().positive(),
-  image: z.string().url().max(2048).optional(),
+  weightGrams: z.coerce.number().int().positive().default(100),
+  image: z.string().url().max(2048).optional().or(z.literal('')),
   initialStock: z.coerce.number().int().nonnegative().max(100000).default(0),
-}).strict()
+})
 
 export const productCreateSchema = z.object({
   name: z.string().trim().min(2).max(180),
   slug: z.string().trim().min(2).max(200).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   categoryId: cuidSchema,
-  description: z.string().trim().max(10000).optional(),
-  images: z.array(z.object({ url: z.string().url().max(2048), altText: z.string().max(255).optional() }).strict()).max(12).default([]),
+  description: z.string().trim().max(10000).optional().nullable(),
+  images: z.array(z.object({ url: z.string().url().max(2048), altText: z.string().max(255).optional() })).max(12).default([]),
   variants: z.array(variantCreateSchema.omit({ initialStock: true }).extend({ initialStock: variantCreateSchema.shape.initialStock })).min(1).max(100),
-}).strict()
+})
 
 export const productUpdateSchema = z.object({
   name: z.string().trim().min(2).max(180).optional(),
   slug: z.string().trim().min(2).max(200).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
   categoryId: cuidSchema.optional(),
   description: z.string().trim().max(10000).nullable().optional(),
+  images: z.array(z.object({ url: z.string().url().max(2048), altText: z.string().max(255).optional() }).strict()).max(12).optional(),
   status: z.nativeEnum(RecordStatus).optional(),
 }).strict()
 

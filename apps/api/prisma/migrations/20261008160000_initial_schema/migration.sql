@@ -484,7 +484,8 @@ ALTER TABLE `product_variants` ADD CONSTRAINT `product_variants_stock_nonnegativ
 ALTER TABLE `product_variants` ADD CONSTRAINT `product_variants_reservation_bounds_ck` CHECK (`reserved_stock` <= `stock_on_hand`);
 ALTER TABLE `inventory_logs` ADD CONSTRAINT `inventory_logs_quantity_nonzero_ck` CHECK (`quantity` <> 0);
 ALTER TABLE `inventory_reservations` ADD CONSTRAINT `inventory_reservations_quantity_positive_ck` CHECK (`quantity` > 0);
-ALTER TABLE `carts` ADD CONSTRAINT `carts_exactly_one_owner_ck` CHECK ((`user_id` IS NOT NULL AND `session_id` IS NULL) OR (`user_id` IS NULL AND `session_id` IS NOT NULL));
+-- carts_exactly_one_owner_ck omitted: MySQL 8.4 does not permit CHECK constraints referencing columns with FK referential actions (ON DELETE CASCADE)
+-- ALTER TABLE `carts` ADD CONSTRAINT `carts_exactly_one_owner_ck` CHECK ((`user_id` IS NOT NULL AND `session_id` IS NULL) OR (`user_id` IS NULL AND `session_id` IS NOT NULL));
 ALTER TABLE `cart_items` ADD CONSTRAINT `cart_items_quantity_positive_ck` CHECK (`quantity` > 0);
 ALTER TABLE `orders` ADD CONSTRAINT `orders_amounts_nonnegative_ck` CHECK (`subtotal` >= 0 AND `discount` >= 0 AND `shipping_cost` >= 0 AND `total` >= 0);
 ALTER TABLE `orders` ADD CONSTRAINT `orders_discount_within_subtotal_ck` CHECK (`discount` <= `subtotal`);

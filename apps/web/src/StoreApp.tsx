@@ -1,5 +1,5 @@
-﻿import { useState, type FormEvent } from 'react'
-import { ArrowRight, Search, ShoppingBasket } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
+import { ArrowRight, LogOut, Search, ShoppingBasket, User } from 'lucide-react'
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import ProductsPage from './pages/ProductsPage'
@@ -32,6 +32,12 @@ function SearchForm() {
 
 function StoreLayout() {
   const { user, loading, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/', { replace: true })
+  }
 
   return (
     <>
@@ -42,10 +48,24 @@ function StoreLayout() {
           <NavLink end to="/">Beranda</NavLink>
           <NavLink to="/products">Semua camilan</NavLink>
           <NavLink to="/cart"><ShoppingBasket size={15} aria-hidden="true" /> Keranjang</NavLink>
-          {!loading && (user
-            ? <NavLink to="/profile">Profil</NavLink>
-            : <NavLink to="/login">Masuk</NavLink>)}
-          {!loading && user && <button className="header-account" onClick={() => void signOut()} type="button">Keluar</button>}
+          {!loading && (user ? (
+            <>
+              <NavLink to="/profile" title="Buka profil saya" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <User size={14} /> {user.name.split(' ')[0]}
+              </NavLink>
+              <button
+                className="header-account"
+                onClick={() => void handleSignOut()}
+                type="button"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                title="Keluar dari akun"
+              >
+                <LogOut size={13} /> Keluar
+              </button>
+            </>
+          ) : (
+            <NavLink to="/login">Masuk</NavLink>
+          ))}
         </nav>
         <SearchForm />
       </header>

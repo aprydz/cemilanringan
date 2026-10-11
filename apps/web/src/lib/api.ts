@@ -1,6 +1,10 @@
 import axios from 'axios'
 
+const TOKEN_STORAGE_KEY = 'piscokshop_token'
 let accessToken: string | null = null
+try {
+  accessToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null
+} catch {}
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
@@ -50,4 +54,10 @@ api.interceptors.response.use(
 
 export function setAccessToken(token: string | null) {
   accessToken = token
+  try {
+    if (typeof window !== 'undefined') {
+      if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token)
+      else localStorage.removeItem(TOKEN_STORAGE_KEY)
+    }
+  } catch {}
 }

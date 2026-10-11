@@ -1,4 +1,4 @@
-﻿import { Prisma, RecordStatus } from '@prisma/client'
+import { Prisma, RecordStatus } from '@prisma/client'
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../database/prisma.js'
@@ -64,7 +64,48 @@ adminProductsRouter.patch('/products/:id', trustedOrigin, async (request, respon
     const category = await prisma.category.findFirst({ where: { id: input.categoryId, status: RecordStatus.ACTIVE } })
     if (!category) throw new HttpError(404, 'Active category not found')
   }
-  const product = await prisma.product.update({ where: { id }, data: input, include: { category: true, images: true, variants: true } })
+
+  const { images, ...productData } = input
+
+  const product = await prisma.$transaction(async (transaction) => {
+    if (images !== undefined) {
+      await transaction.productImage.deleteMany({ where: { productId: id } })
+      if (images.length > 0) {
+        await transaction.productImage.createMany({
+          data: images.map((image, sortOrder) => ({
+            productId: id,
+            url: image.url,
+            altText: image.altText,
+            sortOrder,
+          })),
+        })
+      }
+    }
+
+    if (productData.status === RecordStatus.ACTIVE) {
+      await transaction.productVariant.updateMany({
+        where: { productId: id },
+        data: { status: RecordStatus.ACTIVE },
+      })
+    }
+
+    return transaction.product.update({
+      where: { id },
+      data: productData,
+      include: {
+        category: true,
+        images: { orderBy: { sortOrder: 'asc' } },
+        variants: {
+          include: {
+            flavor: { select: { id: true, name: true } },
+            size: { select: { id: true, name: true, weightGrams: true } },
+          },
+          orderBy: { sku: 'asc' },
+        },
+      },
+    })
+  })
+
   response.status(200).json({ success: true, message: 'Product updated successfully', data: product })
 })
 

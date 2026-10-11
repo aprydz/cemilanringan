@@ -65,8 +65,10 @@ export type AdminProduct = {
   id: string
   name: string
   slug: string
+  description?: string | null
   status: string
   category: { id: string; name: string }
+  images: Array<{ id: string; url: string; altText: string | null }>
   variants: Array<{ id: string; sku: string; price: number; stockOnHand: number; reservedStock: number; status: string; flavor: { name: string }; size: { name: string } }>
 }
 
@@ -83,6 +85,21 @@ export async function getAdminProducts() {
 
 export async function createAdminProduct(input: Record<string, unknown>) {
   const response = await api.post<ApiResponse<AdminProduct>>('/admin/products', input)
+  return response.data.data
+}
+
+export async function updateAdminProduct(id: string, input: Record<string, unknown>) {
+  const response = await api.patch<ApiResponse<AdminProduct>>(`/admin/products/${encodeURIComponent(id)}`, input)
+  return response.data.data
+}
+
+export async function deleteAdminProduct(id: string) {
+  const response = await api.delete<ApiResponse<{ id: string }>>(`/admin/products/${encodeURIComponent(id)}`)
+  return response.data.data
+}
+
+export async function updateAdminVariant(id: string, input: Record<string, unknown>) {
+  const response = await api.patch<ApiResponse<{ id: string; price: number }>>(`/admin/variants/${encodeURIComponent(id)}`, input)
   return response.data.data
 }
 

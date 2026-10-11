@@ -28,7 +28,12 @@ export async function getSizes(signal?: AbortSignal) {
 }
 
 export function getRequestError(error: unknown) {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
+  if (axios.isAxiosError<{ message?: string; errors?: Array<{ field?: string; message: string }> }>(error)) {
+    const errorDetails = error.response?.data?.errors
+    if (errorDetails && errorDetails.length > 0) {
+      const details = errorDetails.map((e) => (e.field ? `${e.field}: ${e.message}` : e.message)).join(', ')
+      return `${error.response?.data?.message ?? 'Validasi gagal'}: ${details}`
+    }
     return error.response?.data?.message ?? 'Layanan sedang tidak tersedia. Coba lagi sebentar.'
   }
 

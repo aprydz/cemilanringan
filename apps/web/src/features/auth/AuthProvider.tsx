@@ -12,8 +12,18 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+const USER_STORAGE_KEY = 'piscokshop_user'
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem(USER_STORAGE_KEY)
+        return cached ? (JSON.parse(cached) as UserProfile) : null
+      }
+    } catch {}
+    return null
+  })
   const [loading, setLoading] = useState(true)
   const refreshStarted = useRef(false)
 
@@ -25,10 +35,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ user: refreshedUser, accessToken }) => {
         setAccessToken(accessToken)
         setUser(refreshedUser)
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(refreshedUser))
+          }
+        } catch {}
       })
       .catch(() => {
+        // If refresh fails and there is no valid session, clear
         setAccessToken(null)
         setUser(null)
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(USER_STORAGE_KEY)
+          }
+        } catch {}
       })
       .finally(() => setLoading(false))
   }, [])
@@ -37,6 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await loginAccount(input)
     setAccessToken(result.accessToken)
     setUser(result.user)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.user))
+      }
+    } catch {}
     return result.user
   }
 
@@ -44,6 +70,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await registerAccount(input)
     setAccessToken(result.accessToken)
     setUser(result.user)
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(result.user))
+      }
+    } catch {}
   }
 
   const signOut = async () => {
@@ -52,6 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setAccessToken(null)
       setUser(null)
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(USER_STORAGE_KEY)
+        }
+      } catch {}
     }
   }
 

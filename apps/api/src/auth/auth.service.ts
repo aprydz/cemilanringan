@@ -206,7 +206,7 @@ export const refreshCookie = {
   options: {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: env.NODE_ENV === 'production' ? ('strict' as const) : ('lax' as const),
     path: '/api/auth',
   },
 }

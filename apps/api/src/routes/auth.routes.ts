@@ -20,7 +20,7 @@ const authRateLimit = rateLimit({
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(191).transform((value) => value.toLowerCase()),
-  password: z.string().min(12).max(72).refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must not exceed 72 bytes'),
+  password: z.string().min(6).max(72).refine((value) => Buffer.byteLength(value, 'utf8') <= 72, 'Password must not exceed 72 bytes'),
   phone: z.string().trim().max(30).optional(),
 }).strict()
 
