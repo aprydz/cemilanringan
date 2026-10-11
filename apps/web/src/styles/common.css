@@ -1,0 +1,7 @@
+.message-page h1 { max-width: 600px; margin-bottom: 18px; }
+.site-footer { min-height: 120px; padding: 25px 8%; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); background: #fffdf7; }
+.footer-wordmark { font-size: 17px; }
+.footer-wordmark .wordmark-stamp { width: 28px; height: 28px; }
+.site-footer p, .footer-note { color: var(--muted); font-size: 11px; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-reveal { from { opacity: .55; transform: scale(1.025); } to { opacity: 1; transform: scale(1); } }

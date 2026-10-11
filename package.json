@@ -1,0 +1,19 @@
+{
+  "name": "piscokshop",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @piscokshop/web",
+    "dev:api": "npm run dev --workspace @piscokshop/api",
+    "build": "npm run build --workspace @piscokshop/web && npm run build --workspace @piscokshop/api",
+    "typecheck": "npm run typecheck --workspace @piscokshop/web && npm run typecheck --workspace @piscokshop/api",
+    "test:api": "npm test --workspace @piscokshop/api",
+    "db:validate": "npm exec --workspace @piscokshop/api -- prisma validate --schema prisma/schema.prisma",
+    "db:generate": "npm run db:generate --workspace @piscokshop/api",
+    "db:migrate": "npm run db:migrate --workspace @piscokshop/api",
+    "db:seed": "npm run db:seed --workspace @piscokshop/api",
+    "admin:create": "npm run admin:create --workspace @piscokshop/api"
+  }
+}

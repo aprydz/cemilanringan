@@ -1,0 +1,12 @@
+.catalog-heading { margin-bottom: 28px; }
+.catalog-heading h1 { font-size: 46px; }
+.catalog-heading > p:last-child { margin-top: 10px; color: var(--muted); font-size: 13px; }
+.catalog-controls { margin-bottom: 24px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.catalog-controls select, .catalog-controls input { min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: white; color: var(--ink); font: inherit; font-size: 12px; }
+.catalog-controls select { min-width: 155px; }
+.catalog-controls input { width: min(100%, 270px); }
+.catalog-count { margin-left: auto; color: var(--muted); font-size: 11px; }
+.pagination { margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 16px; color: var(--muted); font-size: 12px; }
+.pagination button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 3px; background: white; color: var(--ink); font: inherit; cursor: pointer; }
+.pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.product-detail { max-width: 1240px; margin: 0 auto; padding: 36px 8% 80px; }

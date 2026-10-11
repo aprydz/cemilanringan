@@ -1,0 +1,16 @@
+.announcement { min-height: 30px; padding: 0 5.6%; display: flex; align-items: center; justify-content: space-between; background: var(--ink); color: #fff9eb; font-size: 11px; }
+.announcement-mark { color: #f5bd40; font-family: var(--display); font-style: italic; }
+.site-header { min-height: 76px; padding: 0 5.6%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px; background: var(--paper); border-bottom: 1px solid var(--line); }
+.wordmark { display: inline-flex; align-items: center; gap: 9px; justify-self: start; color: var(--ink); font-size: 20px; font-weight: 800; line-height: 1; text-decoration: none; }
+.wordmark-light { color: var(--tomato); font-weight: 500; }
+.wordmark-stamp { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--tomato); color: white; font-family: var(--display); font-size: 15px; font-style: italic; font-weight: 700; }
+.main-nav { display: flex; align-items: center; gap: 28px; height: 100%; }
+.main-nav a { color: var(--muted); font-size: 13px; text-decoration: none; transition: color 160ms ease; }
+.main-nav a:last-child { display: inline-flex; align-items: center; gap: 6px; }
+.main-nav a:hover, .main-nav a.active { color: var(--tomato); }
+.header-account { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.header-account:hover { color: var(--tomato); }
+.header-search { width: min(100%, 230px); height: 38px; justify-self: end; display: flex; align-items: center; gap: 8px; padding: 0 7px 0 12px; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); background: white; }
+.header-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: inherit; font-size: 12px; }
+.header-search button { width: 27px; height: 27px; display: grid; flex: 0 0 auto; place-items: center; border: 0; border-radius: 3px; background: var(--tomato); color: white; cursor: pointer; }
+.hero { min-height: 510px; position: relative; display: flex; align-items: center; overflow: hidden; color: white; background: #384032; }

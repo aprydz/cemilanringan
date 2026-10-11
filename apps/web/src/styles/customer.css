@@ -1,0 +1,42 @@
+.profile-details { max-width: 620px; margin: 25px 0 27px; border-top: 1px solid var(--line); }
+.profile-details p { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.profile-details strong { color: var(--ink); font-weight: 600; text-align: right; }
+.profile-links { max-width: 620px; border-top: 1px solid var(--line); }
+.profile-links a { min-height: 53px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 12px; text-decoration: none; }
+.profile-links a svg:first-child { color: var(--green); }
+.profile-links a svg:last-child { margin-left: auto; color: var(--muted); }
+.text-button { margin-top: 20px; padding: 8px 0; display: inline-flex; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--tomato); font: inherit; font-size: 12px; cursor: pointer; }
+.address-list { margin-bottom: 33px; border-top: 1px solid var(--line); }
+.address-row { min-height: 105px; padding: 17px 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
+.address-row strong { color: var(--ink); font-size: 12px; }
+.address-row p:not(.address-label) { margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.address-label { margin-bottom: 7px; color: var(--ink); font-size: 12px; font-weight: 700; }
+.address-label span { margin-left: 7px; color: var(--green); font-size: 9px; }
+.address-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.address-actions button { min-height: 32px; padding: 0 9px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 3px; background: white; color: var(--muted); font: inherit; font-size: 10px; cursor: pointer; }
+.address-actions button:hover { color: var(--tomato); }
+.address-form { max-width: 740px; padding-top: 19px; border-top: 2px solid var(--ink); }
+.address-form h2, .customer-order-section h2 { margin: 0 0 17px; color: var(--ink); font-family: var(--display); font-size: 23px; font-weight: 600; }
+.address-form .checkout-field-grid { margin-bottom: 15px; }
+.default-address-toggle { margin: 0 0 16px; display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 11px; }
+.default-address-toggle input { accent-color: var(--green); }
+.customer-order-list { border-top: 1px solid var(--line); }
+.customer-order-row { min-height: 70px; padding: 13px 2px; display: grid; grid-template-columns: minmax(140px, 1fr) minmax(160px, .9fr) auto 18px; align-items: center; gap: 15px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; text-decoration: none; }
+.customer-order-row:hover { background: #fffdf7; }
+.customer-order-row span:first-child strong { display: block; }
+.customer-order-row small { margin-top: 4px; display: block; color: var(--muted); font-size: 10px; }
+.customer-order-row > strong { white-space: nowrap; }
+.order-status-cell { color: var(--green); }
+.customer-order-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(270px, .75fr); gap: 38px; }
+.customer-order-section { min-width: 0; padding-top: 18px; border-top: 2px solid var(--ink); }
+.customer-order-item { min-height: 63px; padding: 12px 0; display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 11px; }
+.customer-order-item span { min-width: 0; }
+.customer-order-item strong { white-space: nowrap; }
+.customer-order-item small { margin-top: 5px; display: block; color: var(--muted); font-size: 10px; }
+.customer-order-section > p { margin: 8px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.tracking-row { margin-top: 17px; padding-top: 14px; display: grid; gap: 6px; border-top: 1px solid var(--line); font-size: 11px; }
+.tracking-row strong { color: var(--ink); }
+.tracking-row span, .tracking-row small { color: var(--muted); font-size: 10px; }
+.customer-total { margin: 24px 0; padding: 15px 0; display: flex; align-items: center; justify-content: space-between; gap: 15px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+.customer-total strong { color: var(--ink); font-size: 14px; white-space: nowrap; }
+.message-page { min-height: 54vh; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 60px 10%; }
