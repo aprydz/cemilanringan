@@ -26,13 +26,15 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Copy build artifacts + prisma schema + node_modules (Prisma client ada di root node_modules)
+# Copy build artifacts + prisma schema + node_modules
+# @prisma/client ter-install di apps/api/node_modules (npm workspaces) → harus ikut kebawa
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/web/dist ./apps/web/dist
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 EXPOSE 3000
 
