@@ -19,13 +19,6 @@ const orderCreateLimit = rateLimit({
     response.status(429).json({ success: false, message: 'Too many order attempts, please try again later', errors: [] })
   },
 })
-const couponValidateLimit = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 10,
-  handler: (_request, response) => {
-    response.status(429).json({ success: false, message: 'Too many coupon validations', errors: [] })
-  },
-})
 
 export const orderRouter = Router()
 

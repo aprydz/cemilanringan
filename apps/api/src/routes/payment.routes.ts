@@ -118,11 +118,8 @@ paymentRouter.post('/webhook', async (request, response) => {
   })
   if (!payment) throw new HttpError(404, 'Payment transaction not found')
 
-  // P0-3: gross_amount may be "22000" vs "22000.00" — compare numerically, not string equality
-  if (!new Prisma.Decimal(notification.gross_amount).equals(payment.amount) && new Prisma.Decimal(notification.gross_amount).toFixed(0) !== payment.amount.toFixed(0)) {
-    const received = new Prisma.Decimal(notification.gross_amount).toFixed(0)
-    const expected = payment.amount.toFixed(0)
-    if (received !== expected) throw new HttpError(409, 'Payment amount does not match the order')
+  if (!new Prisma.Decimal(notification.gross_amount).equals(payment.amount)) {
+    throw new HttpError(409, 'Payment amount does not match the order')
   }
 
   let targetStatus: PaymentStatus

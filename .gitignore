@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+apps/web/dist/
+apps/api/dist/
 .env
 .env.*
 !.env.example

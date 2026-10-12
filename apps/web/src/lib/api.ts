@@ -6,8 +6,19 @@ try {
   accessToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_STORAGE_KEY) : null
 } catch {}
 
+const resolvedBaseUrl = (() => {
+  const raw = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
+  if (raw) return raw
+  // Di production (single service di Railway) frontend diserve bareng API → cukup /api
+  // Di dev tanpa VITE_API_URL, fallback ke localhost:3000 (Vite proxy /api tetap jalan)
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return '/api'
+  }
+  return 'http://localhost:3000/api'
+})()
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api',
+  baseURL: resolvedBaseUrl,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
   timeout: 10_000,

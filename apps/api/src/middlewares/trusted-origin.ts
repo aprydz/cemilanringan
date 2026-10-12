@@ -23,7 +23,8 @@ export const trustedOrigin: RequestHandler = (request, _response, next) => {
       next(new HttpError(403, 'Request origin is not allowed'))
       return
     }
-    if (originUrl.origin !== env.CLIENT_ORIGIN) {
+    const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
+    if (!allowedOrigins.includes(originUrl.origin)) {
       next(new HttpError(403, 'Request origin is not allowed'))
       return
     }

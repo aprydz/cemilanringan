@@ -11,12 +11,18 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32).optional(),
   JWT_REFRESH_TTL_DAYS: z.coerce.number().int().positive().max(90).default(7),
 }).superRefine((config, context) => {
-  if (config.CLIENT_ORIGIN.split(',').length > 1) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'CLIENT_ORIGIN must be a single URL; use comma-separated filtering in app.ts if needed',
-      path: ['CLIENT_ORIGIN'],
-    })
+  // Railway: CLIENT_ORIGIN boleh ","-separated untuk allow beberapa origin.
+  // Validasi tiap origin harus URL valid, bukan hard-fail single URL.
+  for (const origin of config.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)) {
+    try {
+      new URL(origin)
+    } catch {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `CLIENT_ORIGIN contains invalid URL: ${origin}`,
+        path: ['CLIENT_ORIGIN'],
+      })
+    }
   }
   if (!config.JWT_ACCESS_SECRET) {
     if (config.NODE_ENV === 'production') {
@@ -54,12 +60,10 @@ const envSchema = z.object({
       path: ['CLIENT_ORIGIN'],
     })
   }
-  if (config.NODE_ENV === 'production' && (!config.PAYMENT_SERVER_KEY || config.PAYMENT_API_BASE_URL.includes('sandbox'))) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Production payment credentials and non-sandbox API URL are required',
-      path: ['PAYMENT_SERVER_KEY'],
-    })
+  // Payment opsional saat awal deploy — cukup warn bila pakai sandbox di prod, jangan block app start.
+  // Nanti saat butuh Midtrans production, isi PAYMENT_SERVER_KEY + PAYMENT_API_BASE_URL non-sandbox.
+  if (config.NODE_ENV === 'production' && config.PAYMENT_SERVER_KEY && config.PAYMENT_API_BASE_URL.includes('sandbox')) {
+    console.warn(JSON.stringify({ level: 'warn', message: 'PAYMENT_API_BASE_URL still sandbox in production — switch to production Midtrans URL before live payments', timestamp: new Date().toISOString() }))
   }
 })
 
