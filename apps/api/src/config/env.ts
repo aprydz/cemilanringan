@@ -70,7 +70,12 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env)
 
 if (!parsedEnv.success) {
-  console.error(JSON.stringify({ level: 'error', message: 'Invalid environment configuration', errors: parsedEnv.error.flatten().fieldErrors, timestamp: new Date().toISOString() }))
+  const flat = parsedEnv.error.flatten()
+  console.error(JSON.stringify({ level: 'error', message: 'Invalid environment configuration', fieldErrors: flat.fieldErrors, formErrors: flat.formErrors, allIssues: parsedEnv.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message, code: String(i.code) })), timestamp: new Date().toISOString() }))
+  // Juga print raw issues agar tidak ter-filter oleh Railway log formatter
+  for (const issue of parsedEnv.error.issues) {
+    console.error(`ENV ERROR [${issue.path.join('.') || '(root)'}]: ${issue.message}`)
+  }
   process.exit(1)
 }
 
