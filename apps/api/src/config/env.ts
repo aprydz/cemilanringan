@@ -54,11 +54,7 @@ const envSchema = z.object({
     })
   }
   if (config.NODE_ENV === 'production' && config.CLIENT_ORIGIN.includes('localhost')) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'CLIENT_ORIGIN must not be localhost in production',
-      path: ['CLIENT_ORIGIN'],
-    })
+    console.warn(JSON.stringify({ level: 'warn', message: 'CLIENT_ORIGIN is still localhost in production — set Railway Variables CLIENT_ORIGIN to your https://<app>.up.railway.app domain for correct CORS', received: config.CLIENT_ORIGIN, timestamp: new Date().toISOString() }))
   }
   // Payment opsional saat awal deploy — cukup warn bila pakai sandbox di prod, jangan block app start.
   // Nanti saat butuh Midtrans production, isi PAYMENT_SERVER_KEY + PAYMENT_API_BASE_URL non-sandbox.
