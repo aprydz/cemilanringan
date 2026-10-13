@@ -38,16 +38,48 @@ export async function expirePendingOrders(now = new Date()) {
 }
 
 export async function startReservationExpiryWorker() {
+  let consecutiveFailures = 0
+
+  const formatError = (error: unknown) => {
+    if (error instanceof Error) {
+      const withCode = error as Error & { code?: unknown }
+      return {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        ...(withCode.code !== undefined ? { code: withCode.code } : {}),
+      }
+    }
+    return { value: String(error) }
+  }
+
   const run = async () => {
     try {
       const count = await expirePendingOrders()
+      consecutiveFailures = 0
       if (count > 0) logger.info(`Expired ${count} pending Piscokshop order(s)`)
     } catch (error) {
-      logger.error('Pending order expiry job failed', error)
+      consecutiveFailures += 1
+      const detail = formatError(error)
+      logger.error('Pending order expiry job failed', {
+        error: detail,
+        consecutiveFailures,
+        hint: consecutiveFailures >= 3
+          ? 'expiry job keeps failing (≥3x). Check DATABASE_URL connectivity and Prisma migration status'
+          : undefined,
+      })
+      if (consecutiveFailures >= 10) {
+        logger.error(
+          'Pending order expiry job is repeatedly failing — suppressing further error spam for now (job keeps retrying every 60s)',
+          { consecutiveFailures },
+        )
+      }
     }
   }
 
   await run()
   const interval = setInterval(() => void run(), 60_000)
+  // Hindari interval tetap hidup saat process mau shutdown / testing
+  if (typeof interval.unref === 'function') interval.unref()
   return () => clearInterval(interval)
 }
