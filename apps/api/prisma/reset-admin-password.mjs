@@ -1,11 +1,10 @@
-```javascript
+``javascript
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 
 const prisma = new PrismaClient()
-
 const rl = createInterface({ input: stdin, output: stdout })
 
 async function main() {
@@ -21,13 +20,21 @@ async function main() {
     'Masukkan password admin baru (minimal 12 karakter): ',
   )
 
-  if (password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+  if (
+    password.length < 12 ||
+    Buffer.byteLength(password, 'utf8') > 72
+  ) {
     throw new Error('Password harus 12–72 byte')
   }
 
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, email: true, role: true, status: true },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      status: true,
+    },
   })
 
   if (!user) {
@@ -58,4 +65,3 @@ main()
     rl.close()
     await prisma.$disconnect()
   })
-```
