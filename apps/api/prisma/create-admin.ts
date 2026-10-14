@@ -1,7 +1,15 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import path from 'node:path'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 import { prisma } from '../src/database/prisma.js'
+
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env'),
+})
+dotenv.config({
+  path: path.resolve(process.cwd(), '../../.env'),
+})
 
 const adminInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
