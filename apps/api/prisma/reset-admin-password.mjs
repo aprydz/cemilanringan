@@ -1,4 +1,3 @@
-javascript
 import bcrypt from 'bcryptjs'
 import { PrismaClient } from '@prisma/client'
 import { createInterface } from 'node:readline/promises'
