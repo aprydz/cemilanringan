@@ -6,7 +6,7 @@ cmds = ["npm ci"]
 
 [phases.build]
 cmds = [
-  "npx --workspace @piscokshop/api prisma generate",
+  "DATABASE_URL=\"mysql://user:pass@localhost:3306/dummy\" SHADOW_DATABASE_URL=\"mysql://user:pass@localhost:3306/dummy_shadow\" npx --workspace @piscokshop/api prisma generate",
   "npm run build"
 ]
 

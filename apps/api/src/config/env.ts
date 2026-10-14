@@ -1,10 +1,21 @@
 import { z } from 'zod'
 
+const stripQuotes = (value: string) => value.replace(/^["']|["']$/g, '').trim()
+
+const dbUrlSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => stripQuotes(value))
+  .pipe(z.string().min(1))
+  .optional()
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
-  DATABASE_URL: z.string().min(1).optional(),
+  DATABASE_URL: dbUrlSchema,
+  SHADOW_DATABASE_URL: dbUrlSchema,
   SHIPPING_FLAT_RATE_IDR: z.coerce.number().int().nonnegative().optional(),
   PAYMENT_SERVER_KEY: z.string().min(16).optional(),
   PAYMENT_API_BASE_URL: z.string().url().default('https://app.sandbox.midtrans.com'),
@@ -46,11 +57,27 @@ const envSchema = z.object({
       path: ['SHIPPING_FLAT_RATE_IDR'],
     })
   }
-  if (config.NODE_ENV === 'production' && !config.DATABASE_URL) {
+  // Fail-fast: Prisma error "must start with mysql://" membingungkan — deteksi dini dengan pesan jelas.
+  const dbUrl = config.DATABASE_URL?.trim()
+  const shadowUrl = config.SHADOW_DATABASE_URL?.trim()
+  if (config.NODE_ENV === 'production' && !dbUrl) {
     context.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'DATABASE_URL must be configured in production',
+      message: 'DATABASE_URL must be configured in production (mysql://user:pass@host:port/db, without quotes)',
       path: ['DATABASE_URL'],
+    })
+  } else if (dbUrl && !dbUrl.startsWith('mysql://')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'DATABASE_URL must start with mysql:// — remove surrounding quotes/spaces and keep mysql:// prefix',
+      path: ['DATABASE_URL'],
+    })
+  }
+  if (shadowUrl && !shadowUrl.startsWith('mysql://')) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'SHADOW_DATABASE_URL must start with mysql:// when set — remove surrounding quotes/spaces',
+      path: ['SHADOW_DATABASE_URL'],
     })
   }
   if (config.NODE_ENV === 'production' && config.CLIENT_ORIGIN.includes('localhost')) {
@@ -80,3 +107,7 @@ export const env = {
   ...parsedEnv.data,
   JWT_ACCESS_SECRET: parsedEnv.data.JWT_ACCESS_SECRET ?? DEV_FALLBACK_JWT_SECRET,
 } as typeof parsedEnv.data & { JWT_ACCESS_SECRET: string }
+
+// Sync stripped URL back ke process.env agar Prisma yang baca env langsung tidak kena kutip/spasi.
+if (env.DATABASE_URL) process.env.DATABASE_URL = env.DATABASE_URL
+if (env.SHADOW_DATABASE_URL) process.env.SHADOW_DATABASE_URL = env.SHADOW_DATABASE_URL

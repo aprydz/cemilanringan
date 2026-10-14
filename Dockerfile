@@ -12,7 +12,9 @@ RUN npm ci
 COPY . .
 
 # Prisma client needs DATABASE_URL at generate time — dummy is enough for build
+# Keep SHADOW_DATABASE_URL aligned so Prisma generate does not warn/error on build.
 ENV DATABASE_URL="mysql://user:pass@localhost:3306/dummy"
+ENV SHADOW_DATABASE_URL="mysql://user:pass@localhost:3306/dummy_shadow"
 RUN npx --workspace @piscokshop/api prisma generate
 
 # Vite build is baked at image build time. Leave empty to have frontend call same-origin /api
