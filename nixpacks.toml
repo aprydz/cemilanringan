@@ -11,4 +11,4 @@ cmds = [
 ]
 
 [start]
-cmd = "npx --workspace @piscokshop/api prisma migrate deploy && node apps/api/dist/server.js"
+cmd = "npx --workspace @piscokshop/api prisma migrate deploy && node apps/api/prisma/init-production.mjs && node apps/api/dist/server.js"

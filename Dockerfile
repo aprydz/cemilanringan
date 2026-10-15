@@ -40,5 +40,5 @@ COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 EXPOSE 3000
 
-# Railway inject PORT otomatis. migrate deploy idempotent, lalu start API (yang juga serve Web static)
-CMD ["sh", "-c", "npx --workspace @piscokshop/api prisma migrate deploy && node apps/api/dist/server.js"]
+# Railway inject PORT otomatis. migrate deploy idempotent, lalu init db (admin + seed catalog), lalu start API
+CMD ["sh", "-c", "npx --workspace @piscokshop/api prisma migrate deploy && node apps/api/prisma/init-production.mjs && node apps/api/dist/server.js"]

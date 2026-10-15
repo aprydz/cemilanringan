@@ -24,7 +24,11 @@ export const trustedOrigin: RequestHandler = (request, _response, next) => {
       return
     }
     const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
-    if (!allowedOrigins.includes(originUrl.origin)) {
+    const host = request.get('host')
+    const isSameHost = Boolean(host && originUrl.host === host)
+    const isRailway = originUrl.hostname.endsWith('.railway.app') || originUrl.hostname.endsWith('.up.railway.app')
+
+    if (!allowedOrigins.includes(originUrl.origin) && !isSameHost && !isRailway) {
       next(new HttpError(403, 'Request origin is not allowed'))
       return
     }

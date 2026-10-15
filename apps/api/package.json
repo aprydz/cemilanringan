@@ -7,16 +7,15 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "start:migrate": "prisma migrate deploy && node dist/server.js",
+    "start:migrate": "prisma migrate deploy && node prisma/init-production.mjs && node dist/server.js",
     "test": "tsx --test src/auth/auth.routes.test.ts src/promotions/promotion.service.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:init": "node prisma/init-production.mjs",
     "admin:create": "node prisma/create-admin.mjs"
-    
   },
   "dependencies": {
     "@prisma/client": "6.12.0",

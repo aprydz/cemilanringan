@@ -15,6 +15,7 @@
     "db:generate": "npm run db:generate --workspace @piscokshop/api",
     "db:migrate": "npm run db:migrate --workspace @piscokshop/api",
     "db:seed": "npm run db:seed --workspace @piscokshop/api",
+    "db:init": "npm run db:init --workspace @piscokshop/api",
     "admin:create": "npm run admin:create --workspace @piscokshop/api"
   },
   "devDependencies": {

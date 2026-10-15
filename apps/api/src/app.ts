@@ -25,12 +25,36 @@ export const app = express()
 
 app.disable('x-powered-by')
 app.set('trust proxy', 1)
-app.use(helmet())
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        connectSrc: ["'self'", 'https:', 'wss:'],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }),
+)
 const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)
 app.use(cors({
   origin(origin, callback) {
     if (!origin) return callback(null, true)
     if (allowedOrigins.includes(origin)) return callback(null, true)
+    try {
+      const url = new URL(origin)
+      if (url.hostname.endsWith('.railway.app') || url.hostname.endsWith('.up.railway.app')) {
+        return callback(null, true)
+      }
+    } catch {}
     // Di production, browser akan dapat CORS error yang jelas; non-browser tetap lolos via trustedOrigin
     return callback(null, false)
   },
@@ -64,9 +88,14 @@ app.use('/api', catalogRouter)
 // Di local dev folder itu mungkin tidak ada — jadi guard dengan fs.existsSync.
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-// dist di apps/api/dist → naik 3 level ke monorepo root lalu ke apps/web/dist
-const webDistPath = path.resolve(__dirname, '../../../apps/web/dist')
-if (fs.existsSync(webDistPath)) {
+const candidateWebPaths = [
+  path.resolve(__dirname, '../../../apps/web/dist'),
+  path.resolve(process.cwd(), 'apps/web/dist'),
+  path.resolve(process.cwd(), '../web/dist'),
+  path.resolve(process.cwd(), 'dist'),
+]
+const webDistPath = candidateWebPaths.find((candidate) => fs.existsSync(candidate))
+if (webDistPath) {
   app.use(express.static(webDistPath))
   // SPA fallback: selain /api dan /api/health, serahkan ke index.html
   app.get(/^(?!\/api).*/, (_request, response) => {
