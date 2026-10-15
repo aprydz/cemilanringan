@@ -90,15 +90,15 @@ async function provisionAdmin() {
   })
 
   if (existing) {
-    if (existing.role !== 'ADMIN') {
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: { role: 'ADMIN', status: RecordStatus.ACTIVE },
-      })
-      console.log(`[init-db] Existing user ${email} upgraded to ADMIN role.`)
-    } else {
-      console.log(`[init-db] Admin account ${email} is already configured as ADMIN.`)
+    const updateData = { role: 'ADMIN', status: RecordStatus.ACTIVE }
+    if (password) {
+      updateData.passwordHash = await bcrypt.hash(password, 12)
     }
+    await prisma.user.update({
+      where: { id: existing.id },
+      data: updateData,
+    })
+    console.log(`[init-db] Admin account ${email} confirmed as ADMIN${password ? ' (password synced with INITIAL_ADMIN_PASSWORD)' : ''}.`)
     return
   }
 
