@@ -113,6 +113,16 @@ export async function createAdminTaxonomy(type: 'categories' | 'flavors' | 'size
   return response.data.data
 }
 
+export async function updateAdminTaxonomy(type: 'categories' | 'flavors' | 'sizes', id: string, input: Record<string, unknown>) {
+  const response = await api.patch<ApiResponse<AdminTaxonomy>>(`/admin/${type}/${encodeURIComponent(id)}`, input)
+  return response.data.data
+}
+
+export async function deleteAdminTaxonomy(type: 'categories' | 'flavors' | 'sizes', id: string) {
+  const response = await api.delete<ApiResponse<{ id: string }>>(`/admin/${type}/${encodeURIComponent(id)}`)
+  return response.data.data
+}
+
 export async function getAdminCoupons() {
   const response = await api.get<ApiResponse<AdminCoupon[]>>('/admin/coupons')
   return response.data.data
@@ -120,6 +130,16 @@ export async function getAdminCoupons() {
 
 export async function createAdminCoupon(input: Record<string, unknown>) {
   const response = await api.post<ApiResponse<AdminCoupon>>('/admin/coupons', input)
+  return response.data.data
+}
+
+export async function updateAdminCoupon(id: string, input: Record<string, unknown>) {
+  const response = await api.patch<ApiResponse<AdminCoupon>>(`/admin/coupons/${encodeURIComponent(id)}`, input)
+  return response.data.data
+}
+
+export async function deleteAdminCoupon(id: string) {
+  const response = await api.delete<ApiResponse<{ id: string }>>(`/admin/coupons/${encodeURIComponent(id)}`)
   return response.data.data
 }
 

@@ -1,4 +1,4 @@
-﻿import { Prisma, RecordStatus } from '@prisma/client'
+import { Prisma, RecordStatus } from '@prisma/client'
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../database/prisma.js'
@@ -39,6 +39,14 @@ adminCouponsRouter.patch('/coupons/:id', trustedOrigin, async (request, response
 adminCouponsRouter.delete('/coupons/:id', trustedOrigin, async (request, response) => {
   const id = z.string().cuid().parse(request.params.id)
   try {
+    const [redemptionCount, orderCount] = await Promise.all([
+      prisma.couponRedemption.count({ where: { couponId: id } }),
+      prisma.order.count({ where: { couponId: id } }),
+    ])
+    if (redemptionCount === 0 && orderCount === 0) {
+      await prisma.coupon.delete({ where: { id } })
+      return response.status(200).json({ success: true, message: 'Coupon deleted permanently', data: { id } })
+    }
     await prisma.coupon.update({ where: { id }, data: { status: RecordStatus.INACTIVE } })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') throw new HttpError(404, 'Coupon not found')

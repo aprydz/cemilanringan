@@ -1,4 +1,4 @@
-﻿import { Prisma, RecordStatus } from '@prisma/client'
+import { Prisma, RecordStatus } from '@prisma/client'
 import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../../database/prisma.js'
@@ -39,6 +39,11 @@ adminTaxonomyRouter.patch('/categories/:id', trustedOrigin, async (request, resp
 adminTaxonomyRouter.delete('/categories/:id', trustedOrigin, async (request, response) => {
   const id = z.string().cuid().parse(request.params.id)
   try {
+    const productCount = await prisma.product.count({ where: { categoryId: id } })
+    if (productCount === 0) {
+      await prisma.category.delete({ where: { id } })
+      return response.status(200).json({ success: true, message: 'Category deleted permanently', data: { id } })
+    }
     await prisma.category.update({ where: { id }, data: { status: RecordStatus.INACTIVE } })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') throw new HttpError(404, 'Category not found')
@@ -87,6 +92,11 @@ adminTaxonomyRouter.patch('/flavors/:id', trustedOrigin, async (request, respons
 adminTaxonomyRouter.delete('/flavors/:id', trustedOrigin, async (request, response) => {
   const id = z.string().cuid().parse(request.params.id)
   try {
+    const variantCount = await prisma.productVariant.count({ where: { flavorId: id } })
+    if (variantCount === 0) {
+      await prisma.flavor.delete({ where: { id } })
+      return response.status(200).json({ success: true, message: 'Flavor deleted permanently', data: { id } })
+    }
     await prisma.flavor.update({ where: { id }, data: { status: RecordStatus.INACTIVE } })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') throw new HttpError(404, 'Flavor not found')
@@ -117,6 +127,11 @@ adminTaxonomyRouter.patch('/sizes/:id', trustedOrigin, async (request, response)
 adminTaxonomyRouter.delete('/sizes/:id', trustedOrigin, async (request, response) => {
   const id = z.string().cuid().parse(request.params.id)
   try {
+    const variantCount = await prisma.productVariant.count({ where: { sizeId: id } })
+    if (variantCount === 0) {
+      await prisma.size.delete({ where: { id } })
+      return response.status(200).json({ success: true, message: 'Size deleted permanently', data: { id } })
+    }
     await prisma.size.update({ where: { id }, data: { status: RecordStatus.INACTIVE } })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') throw new HttpError(404, 'Size not found')

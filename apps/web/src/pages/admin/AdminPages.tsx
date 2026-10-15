@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Activity, ArrowRight, Box, Check, ClipboardList, Edit2, ImageIcon, LogOut, Package, Plus, RefreshCw, RotateCcw, Shapes, TicketPercent, Trash2, Users, X } from 'lucide-react'
 import { Link, NavLink, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
-import { adjustInventory, createAdminCoupon, createAdminProduct, createAdminPromotion, createAdminTaxonomy, deleteAdminProduct, getAdminCoupons, getAdminCustomers, getAdminOrder, getAdminOrders, getAdminProducts, getAdminPromotions, getAdminTaxonomy, getDashboard, getSalesReport, updateAdminProduct, updateAdminVariant, updateOrderShipping, updateOrderStatus, type AdminCustomer, type AdminDashboardData, type AdminOrder, type AdminOrderDetail, type AdminProduct, type AdminPromotion, type AdminTaxonomy, type SalesReportRow } from '../../features/admin/api'
+import { adjustInventory, createAdminCoupon, createAdminProduct, createAdminPromotion, createAdminTaxonomy, deleteAdminCoupon, deleteAdminProduct, deleteAdminTaxonomy, getAdminCoupons, getAdminCustomers, getAdminOrder, getAdminOrders, getAdminProducts, getAdminPromotions, getAdminTaxonomy, getDashboard, getSalesReport, updateAdminCoupon, updateAdminProduct, updateAdminTaxonomy, updateAdminVariant, updateOrderShipping, updateOrderStatus, type AdminCoupon, type AdminCustomer, type AdminDashboardData, type AdminOrder, type AdminOrderDetail, type AdminProduct, type AdminPromotion, type AdminTaxonomy, type SalesReportRow } from '../../features/admin/api'
 import { getRequestError } from '../../features/products/api'
 
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 })
@@ -787,18 +787,92 @@ export function AdminTaxonomyPage({ type }: { type: 'categories' | 'flavors' | '
     } catch (requestError) { setError(getRequestError(requestError)) }
   }
 
+  const handleDelete = async (item: AdminTaxonomy) => {
+    if (!window.confirm(`Yakin ingin menghapus ${title.toLowerCase()} "${item.name}"?`)) return
+    setError(null)
+    try {
+      await deleteAdminTaxonomy(type, item.id)
+      setReload((v) => v + 1)
+    } catch (err) {
+      setError(getRequestError(err))
+    }
+  }
+
+  const handleRestore = async (item: AdminTaxonomy) => {
+    setError(null)
+    try {
+      await updateAdminTaxonomy(type, item.id, { status: 'ACTIVE' })
+      setReload((v) => v + 1)
+    } catch (err) {
+      setError(getRequestError(err))
+    }
+  }
+
   return (
     <>
       <div className="admin-page-heading"><div><p className="eyebrow">KATALOG</p><h1>{title}</h1></div></div>
       {error && <p className="auth-error" role="alert">{error}</p>}
       <form className="taxonomy-form" onSubmit={save}><label>Nama<input maxLength={120} minLength={2} onChange={(event) => setName(event.target.value)} required value={name} /></label><label>Slug<input maxLength={160} onChange={(event) => setSlug(event.target.value)} pattern="[a-z0-9]+(-[a-z0-9]+)*" required value={slug} /></label>{isSize && <label>Berat (gram)<input min={1} onChange={(event) => setWeightGrams(event.target.value)} required type="number" value={weightGrams} /></label>}<button className="button-primary" type="submit">Tambah {title.toLowerCase()} <ArrowRight size={15} /></button></form>
-      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Nama</th><th>Slug</th>{isSize && <th>Berat</th>}<th>Status</th></tr></thead><tbody>{records.map((item) => <tr key={item.id}><td>{item.name}</td><td>{item.slug}</td>{isSize && <td>{item.weightGrams} {item.unit}</td>}<td>{item.status}</td></tr>)}{records.length === 0 && <tr><td colSpan={isSize ? 4 : 3}>Belum ada {title.toLowerCase()}.</td></tr>}</tbody></table></div>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>Slug</th>
+              {isSize && <th>Berat</th>}
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((item) => {
+              const isActive = item.status === 'ACTIVE'
+              return (
+                <tr key={item.id}>
+                  <td><strong>{item.name}</strong></td>
+                  <td><code>{item.slug}</code></td>
+                  {isSize && <td>{item.weightGrams} {item.unit}</td>}
+                  <td>
+                    <span className={`badge-status ${isActive ? 'active' : 'inactive'}`}>
+                      {isActive ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                      {isActive ? (
+                        <button
+                          className="action-btn delete"
+                          onClick={() => void handleDelete(item)}
+                          type="button"
+                          title={`Hapus ${title.toLowerCase()}`}
+                        >
+                          <Trash2 size={13} /> Hapus
+                        </button>
+                      ) : (
+                        <button
+                          className="action-btn restore"
+                          onClick={() => void handleRestore(item)}
+                          type="button"
+                          title="Aktifkan kembali"
+                        >
+                          <RotateCcw size={13} /> Aktifkan
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+            {records.length === 0 && <tr><td colSpan={isSize ? 5 : 4}>Belum ada {title.toLowerCase()}.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </>
   )
 }
 
 export function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<Awaited<ReturnType<typeof getAdminCoupons>>>([])
+  const [coupons, setCoupons] = useState<AdminCoupon[]>([])
   const [code, setCode] = useState('')
   const [type, setType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED')
   const [value, setValue] = useState('')
@@ -824,12 +898,86 @@ export function AdminCouponsPage() {
     } catch (requestError) { setError(getRequestError(requestError)) }
   }
 
+  const handleDelete = async (coupon: AdminCoupon) => {
+    if (!window.confirm(`Yakin ingin menghapus kupon "${coupon.code}"?`)) return
+    setError(null)
+    try {
+      await deleteAdminCoupon(coupon.id)
+      setReload((v) => v + 1)
+    } catch (err) {
+      setError(getRequestError(err))
+    }
+  }
+
+  const handleRestore = async (coupon: AdminCoupon) => {
+    setError(null)
+    try {
+      await updateAdminCoupon(coupon.id, { status: 'ACTIVE' })
+      setReload((v) => v + 1)
+    } catch (err) {
+      setError(getRequestError(err))
+    }
+  }
+
   return (
     <>
       <div className="admin-page-heading"><div><p className="eyebrow">PROMOSI</p><h1>Kupon</h1></div></div>
       {error && <p className="auth-error" role="alert">{error}</p>}
       <form className="taxonomy-form coupon-form" onSubmit={save}><label>Kode<input maxLength={80} minLength={3} onChange={(event) => setCode(event.target.value.toUpperCase())} required value={code} /></label><label>Jenis<select onChange={(event) => setType(event.target.value as typeof type)} value={type}><option value="FIXED">Potongan nominal</option><option value="PERCENTAGE">Persentase</option></select></label><label>Nilai<input min={0} max={type === 'PERCENTAGE' ? 100 : undefined} onChange={(event) => setValue(event.target.value)} required type="number" value={value} /></label><label>Minimum belanja<input min={0} onChange={(event) => setMinimumPurchase(event.target.value)} required type="number" value={minimumPurchase} /></label><label>Batas penggunaan<input min={1} onChange={(event) => setUsageLimit(event.target.value)} type="number" value={usageLimit} /></label><label>Mulai<input onChange={(event) => setStartsAt(event.target.value)} required type="datetime-local" value={startsAt} /></label><label>Berakhir<input onChange={(event) => setEndsAt(event.target.value)} required type="datetime-local" value={endsAt} /></label><button className="button-primary" type="submit">Simpan kupon <ArrowRight size={15} /></button></form>
-      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Kode</th><th>Diskon</th><th>Penggunaan</th><th>Status</th></tr></thead><tbody>{coupons.map((coupon) => <tr key={coupon.id}><td>{coupon.code}</td><td>{coupon.value}{coupon.type === 'PERCENTAGE' ? '%' : ' IDR'}</td><td>{coupon.usedCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}</td><td>{coupon.status}</td></tr>)}{coupons.length === 0 && <tr><td colSpan={4}>Belum ada kupon.</td></tr>}</tbody></table></div>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Kode</th>
+              <th>Diskon</th>
+              <th>Penggunaan</th>
+              <th>Status</th>
+              <th style={{ textAlign: 'right' }}>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {coupons.map((coupon) => {
+              const isActive = coupon.status === 'ACTIVE'
+              return (
+                <tr key={coupon.id}>
+                  <td><strong><code>{coupon.code}</code></strong></td>
+                  <td>{coupon.value}{coupon.type === 'PERCENTAGE' ? '%' : ' IDR'}</td>
+                  <td>{coupon.usedCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ''}</td>
+                  <td>
+                    <span className={`badge-status ${isActive ? 'active' : 'inactive'}`}>
+                      {isActive ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div className="table-actions" style={{ justifyContent: 'flex-end' }}>
+                      {isActive ? (
+                        <button
+                          className="action-btn delete"
+                          onClick={() => void handleDelete(coupon)}
+                          type="button"
+                          title="Hapus kupon"
+                        >
+                          <Trash2 size={13} /> Hapus
+                        </button>
+                      ) : (
+                        <button
+                          className="action-btn restore"
+                          onClick={() => void handleRestore(coupon)}
+                          type="button"
+                          title="Aktifkan kembali"
+                        >
+                          <RotateCcw size={13} /> Aktifkan
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+            {coupons.length === 0 && <tr><td colSpan={5}>Belum ada kupon.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </>
   )
 }
