@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowRight, MapPin, PackageCheck, RefreshCw, Trash2 } from 'lucide-react'
+import { ArrowRight, MapPin, PackageCheck, RefreshCw, ShieldCheck, Trash2 } from 'lucide-react'
 import { Link, Navigate, Outlet, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { createPayment, type PaymentMethod } from '../../features/orders/api'
@@ -22,9 +22,27 @@ export function ProfilePage() {
   return (
     <section className="customer-page">
       <div className="catalog-heading"><p className="eyebrow">AKUNMU</p><h1>Profil</h1><p>Informasi akun dan aktivitas belanjamu.</p></div>
+      {user?.role === 'ADMIN' && (
+        <div style={{ margin: '0 0 20px', padding: '16px 20px', background: 'rgba(198, 65, 45, 0.08)', borderRadius: '12px', border: '1px solid rgba(198, 65, 45, 0.25)' }}>
+          <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--tomato)', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px' }}>
+            <ShieldCheck size={18} /> Akses Administrator Aktif
+          </p>
+          <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--ink)' }}>
+            Akun ini memiliki hak akses untuk mengelola produk (CRUD), kategori, varian harga, pesanan, dan laporan toko.
+          </p>
+          <Link
+            className="button-primary"
+            to="/admin/dashboard"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 18px', fontSize: '13px', textDecoration: 'none' }}
+          >
+            Buka Dashboard & CRUD Admin <ArrowRight size={15} />
+          </Link>
+        </div>
+      )}
       <div className="profile-details">
         <p><span>Nama</span><strong>{user?.name}</strong></p>
         <p><span>Email</span><strong>{user?.email}</strong></p>
+        <p><span>Peran Akun</span><strong style={{ color: user?.role === 'ADMIN' ? 'var(--tomato)' : 'inherit' }}>{user?.role === 'ADMIN' ? 'ADMINISTRATOR' : 'Pelanggan'}</strong></p>
         <p><span>Telepon</span><strong>{user?.phone || 'Belum ditambahkan'}</strong></p>
       </div>
       <div className="profile-links"><Link to="/profile/addresses"><MapPin size={17} /> Kelola alamat <ArrowRight size={15} /></Link><Link to="/orders"><PackageCheck size={17} /> Riwayat pesanan <ArrowRight size={15} /></Link></div>

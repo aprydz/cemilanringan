@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { ArrowRight, LogOut, Search, ShoppingBasket, User } from 'lucide-react'
+import { ArrowRight, LogOut, Search, ShieldCheck, ShoppingBasket, User } from 'lucide-react'
 import { BrowserRouter, Link, Navigate, NavLink, Outlet, Route, Routes, useNavigate } from 'react-router-dom'
 import HomePage from './pages/HomePage'
 import ProductsPage from './pages/ProductsPage'
@@ -50,6 +50,21 @@ function StoreLayout() {
           <NavLink to="/cart"><ShoppingBasket size={15} aria-hidden="true" /> Keranjang</NavLink>
           {!loading && (user ? (
             <>
+              {user.role === 'ADMIN' && (
+                <NavLink
+                  to="/admin/dashboard"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    color: 'var(--tomato)',
+                    fontWeight: 600,
+                  }}
+                  title="Buka panel admin (CRUD)"
+                >
+                  <ShieldCheck size={14} /> Panel Admin
+                </NavLink>
+              )}
               <NavLink to="/profile" title="Buka profil saya" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
                 <User size={14} /> {user.name.split(' ')[0]}
               </NavLink>
@@ -73,7 +88,10 @@ function StoreLayout() {
       <footer className="site-footer">
         <Link className="wordmark footer-wordmark" to="/"><span className="wordmark-stamp">ps</span><span>piscok<span className="wordmark-light">shop</span></span></Link>
         <p>Camilan kecil, jeda yang lebih seru.</p>
-        <span className="footer-note">Dibuat untuk waktu ngemil.</span>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '12px' }}>
+          <span className="footer-note">Dibuat untuk waktu ngemil.</span>
+          <Link to="/admin/dashboard" style={{ fontSize: '11px', color: 'var(--muted)', textDecoration: 'none' }}>Portal Admin</Link>
+        </div>
       </footer>
     </>
   )

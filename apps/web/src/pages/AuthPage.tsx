@@ -16,7 +16,7 @@ export default function AuthPage({ mode, adminOnly = false }: { mode: 'login' | 
   const [error, setError] = useState<string | null>(null)
 
   if (!loading && user) {
-    if (adminOnly && user.role === 'ADMIN') {
+    if (user.role === 'ADMIN') {
       return <Navigate replace to="/admin/dashboard" />
     }
     if (!adminOnly) {
@@ -38,7 +38,7 @@ export default function AuthPage({ mode, adminOnly = false }: { mode: 'login' | 
           await signOut()
           throw new Error('Akun ini tidak memiliki akses admin.')
         }
-        navigate(adminOnly ? '/admin/dashboard' : '/products', { replace: true })
+        navigate(signedInUser.role === 'ADMIN' ? '/admin/dashboard' : '/products', { replace: true })
       }
     } catch (requestError) {
       setError(requestError instanceof Error && requestError.message === 'Akun ini tidak memiliki akses admin.'

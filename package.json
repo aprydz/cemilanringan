@@ -16,7 +16,8 @@
     "db:migrate": "npm run db:migrate --workspace @piscokshop/api",
     "db:seed": "npm run db:seed --workspace @piscokshop/api",
     "db:init": "npm run db:init --workspace @piscokshop/api",
-    "admin:create": "npm run admin:create --workspace @piscokshop/api"
+    "admin:create": "npm run admin:create --workspace @piscokshop/api",
+    "admin:promote": "npm run admin:promote --workspace @piscokshop/api"
   },
   "devDependencies": {
     "concurrently": "10.0.6"

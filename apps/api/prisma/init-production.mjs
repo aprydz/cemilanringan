@@ -71,7 +71,7 @@ async function provisionAdmin() {
   const password = process.env.INITIAL_ADMIN_PASSWORD?.trim()
   const name = process.env.INITIAL_ADMIN_NAME?.trim() || 'Admin Piscokshop'
 
-  if (!email || !password) {
+  if (!email) {
     const existingAdmin = await prisma.user.findFirst({
       where: { role: 'ADMIN' },
       select: { id: true, email: true },
@@ -79,7 +79,7 @@ async function provisionAdmin() {
     if (existingAdmin) {
       console.log(`[init-db] Admin account already active: ${existingAdmin.email}`)
     } else {
-      console.warn('[init-db] WARNING: No admin user exists and INITIAL_ADMIN_EMAIL/INITIAL_ADMIN_PASSWORD is not set in environment.')
+      console.warn('[init-db] WARNING: No admin user exists and INITIAL_ADMIN_EMAIL is not set in environment.')
     }
     return
   }
@@ -97,8 +97,13 @@ async function provisionAdmin() {
       })
       console.log(`[init-db] Existing user ${email} upgraded to ADMIN role.`)
     } else {
-      console.log(`[init-db] Admin account ${email} is already configured.`)
+      console.log(`[init-db] Admin account ${email} is already configured as ADMIN.`)
     }
+    return
+  }
+
+  if (!password) {
+    console.warn(`[init-db] User ${email} does not exist yet, and INITIAL_ADMIN_PASSWORD is not provided. Cannot create new admin.`)
     return
   }
 
