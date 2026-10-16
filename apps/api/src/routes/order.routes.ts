@@ -37,6 +37,9 @@ const checkoutSchema = z.object({
     postalCode: z.string().trim().min(3).max(20),
     address: z.string().trim().min(8).max(2000),
   }).strict(),
+  saveAddress: z.boolean().optional(),
+  addressLabel: z.string().trim().max(60).optional(),
+  isDefaultAddress: z.boolean().optional(),
   couponCode: z.string().trim().min(3).max(80).transform((value) => value.toUpperCase()).optional(),
   notes: z.string().trim().max(1000).optional(),
 }).strict()
@@ -246,6 +249,43 @@ orderRouter.post('/', orderCreateLimit, optionalAuth, trustedOrigin, async (requ
           note: 'Stock reserved for checkout',
         },
       })
+    }
+
+    if (request.authUser && input.saveAddress) {
+      const userId = request.authUser.id
+      const existingAddresses = await transaction.address.findMany({
+        where: { userId },
+      })
+      const isDuplicate = existingAddresses.some(
+        (addr) =>
+          addr.postalCode === input.address.postalCode &&
+          addr.address.trim().toLowerCase() === input.address.address.trim().toLowerCase() &&
+          addr.city.trim().toLowerCase() === input.address.city.trim().toLowerCase()
+      )
+      if (!isDuplicate) {
+        const isDefault = Boolean(input.isDefaultAddress) || existingAddresses.length === 0
+        if (isDefault && existingAddresses.length > 0) {
+          await transaction.address.updateMany({
+            where: { userId },
+            data: { isDefault: false },
+          })
+        }
+        await transaction.address.create({
+          data: {
+            userId,
+            label: input.addressLabel || input.address.label || (existingAddresses.length === 0 ? 'Utama' : 'Alamat Pengiriman'),
+            recipientName: input.address.recipientName,
+            phone: input.address.phone,
+            province: input.address.province,
+            city: input.address.city,
+            district: input.address.district,
+            village: input.address.village ?? null,
+            postalCode: input.address.postalCode,
+            address: input.address.address,
+            isDefault,
+          },
+        })
+      }
     }
 
     await transaction.cartItem.deleteMany({ where: { cartId: cart.id } })

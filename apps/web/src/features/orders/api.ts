@@ -25,6 +25,9 @@ export type CheckoutInput = {
     postalCode: string
     address: string
   }
+  saveAddress?: boolean
+  addressLabel?: string
+  isDefaultAddress?: boolean
   notes?: string
   couponCode?: string
 }
